@@ -2,17 +2,47 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import PaymentMethodSelector, {
+  PaymentMethodType,
+} from "@/components/PaymentMethodSelector";
+import BankCardForm from "@/components/BankCardForm";
 
-type PaymentStep = "ready" | "processing" | "success" | "error";
+type PaymentStep =
+  | "ready"
+  | "method_selection"
+  | "card_input"
+  | "processing"
+  | "success"
+  | "error";
 
 const PaymentTerminal = () => {
   const [currentStep, setCurrentStep] = useState<PaymentStep>("ready");
+  const [selectedMethod, setSelectedMethod] =
+    useState<PaymentMethodType | null>(null);
   const amount = "400.00";
 
-  const handlePayment = () => {
+  const handleStartPayment = () => {
+    setCurrentStep("method_selection");
+  };
+
+  const handleMethodSelect = (method: PaymentMethodType) => {
+    setSelectedMethod(method);
+    if (method === "bank_card") {
+      setCurrentStep("card_input");
+    } else {
+      // Для других методов сразу переходим к обработке
+      processPayment(method);
+    }
+  };
+
+  const handleCardSubmit = (cardData: any) => {
+    processPayment("bank_card", cardData);
+  };
+
+  const processPayment = (method: PaymentMethodType, cardData?: any) => {
     setCurrentStep("processing");
 
-    // Имитация обработки платежа
+    // Имитация создания платежа через YooKassa API
     setTimeout(() => {
       setCurrentStep(Math.random() > 0.2 ? "success" : "error");
     }, 3000);
@@ -20,13 +50,16 @@ const PaymentTerminal = () => {
 
   const resetTerminal = () => {
     setCurrentStep("ready");
+    setSelectedMethod(null);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6 flex items-center justify-center">
       <Card className="w-full max-w-lg bg-white shadow-2xl">
         <CardHeader className="text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
-          <CardTitle className="text-3xl font-bold">💳 Оплата картой</CardTitle>
+          <CardTitle className="text-3xl font-bold">
+            💳 Оплата через ЮКасса
+          </CardTitle>
           <p className="text-blue-100 mt-2">Быстро • Безопасно • Надежно</p>
         </CardHeader>
 
@@ -42,28 +75,57 @@ const PaymentTerminal = () => {
 
               <Separator />
 
-              <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-center space-x-4 mb-4">
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-2xl">
-                      💳
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-800">
-                        Банковская карта
-                      </h3>
-                      <p className="text-gray-600">Visa, MasterCard, МИР</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
               <Button
                 size="lg"
                 className="w-full text-lg py-6 bg-blue-600 hover:bg-blue-700"
-                onClick={handlePayment}
+                onClick={handleStartPayment}
               >
-                Оплатить ₽ {amount}
+                Выбрать способ оплаты
+              </Button>
+            </div>
+          )}
+
+          {currentStep === "method_selection" && (
+            <div className="space-y-6">
+              <div className="text-center mb-4">
+                <div className="text-2xl font-bold text-gray-900">
+                  ₽ {amount}
+                </div>
+                <div className="text-gray-500">К оплате</div>
+              </div>
+
+              <PaymentMethodSelector
+                selectedMethod={selectedMethod}
+                onMethodSelect={handleMethodSelect}
+              />
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={resetTerminal}
+              >
+                Отмена
+              </Button>
+            </div>
+          )}
+
+          {currentStep === "card_input" && (
+            <div className="space-y-4">
+              <div className="text-center mb-4">
+                <div className="text-2xl font-bold text-gray-900">
+                  ₽ {amount}
+                </div>
+                <div className="text-gray-500">Оплата банковской картой</div>
+              </div>
+
+              <BankCardForm onSubmit={handleCardSubmit} loading={false} />
+
+              <Button
+                variant="outline"
+                className="w-full mt-4"
+                onClick={() => setCurrentStep("method_selection")}
+              >
+                Назад к способам оплаты
               </Button>
             </div>
           )}
@@ -75,7 +137,10 @@ const PaymentTerminal = () => {
                 Обработка платежа...
               </h2>
               <p className="text-gray-600">
-                Сумма: ₽ {amount} • Банковская карта
+                Сумма: ₽ {amount} •{" "}
+                {selectedMethod === "bank_card"
+                  ? "Банковская карта"
+                  : "Выбранный способ"}
               </p>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
@@ -95,7 +160,12 @@ const PaymentTerminal = () => {
                     Платеж успешно проведен!
                   </h2>
                   <p className="text-green-600 text-lg">Сумма: ₽ {amount}</p>
-                  <p className="text-green-600">Способ: Банковская карта</p>
+                  <p className="text-green-600">
+                    Способ:{" "}
+                    {selectedMethod === "bank_card"
+                      ? "Банковская карта"
+                      : "Выбранный способ"}
+                  </p>
                   <p className="text-sm text-green-500 mt-4">
                     Операция №: {Date.now().toString().slice(-8)}
                   </p>
