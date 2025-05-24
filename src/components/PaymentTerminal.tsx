@@ -2,33 +2,14 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import NumericKeypad from "./NumericKeypad";
-import PaymentMethods from "./PaymentMethods";
-import PaymentStatus from "./PaymentStatus";
 
-type PaymentStep = "amount" | "method" | "processing" | "success" | "error";
+type PaymentStep = "ready" | "processing" | "success" | "error";
 
 const PaymentTerminal = () => {
-  const [currentStep, setCurrentStep] = useState<PaymentStep>("amount");
-  const [amount, setAmount] = useState("");
-  const [selectedMethod, setSelectedMethod] = useState<string>("");
+  const [currentStep, setCurrentStep] = useState<PaymentStep>("ready");
+  const amount = "400.00";
 
-  const handleAmountChange = (value: string) => {
-    if (value === "clear") {
-      setAmount("");
-    } else if (value === "delete") {
-      setAmount((prev) => prev.slice(0, -1));
-    } else if (value === "confirm" && amount) {
-      setCurrentStep("method");
-    } else if (value !== "confirm") {
-      if (amount.length < 8) {
-        setAmount((prev) => prev + value);
-      }
-    }
-  };
-
-  const handleMethodSelect = (method: string) => {
-    setSelectedMethod(method);
+  const handlePayment = () => {
     setCurrentStep("processing");
 
     // Имитация обработки платежа
@@ -38,68 +19,116 @@ const PaymentTerminal = () => {
   };
 
   const resetTerminal = () => {
-    setCurrentStep("amount");
-    setAmount("");
-    setSelectedMethod("");
-  };
-
-  const formatAmount = (value: string) => {
-    if (!value) return "0.00";
-    const num = parseInt(value) / 100;
-    return num.toFixed(2);
+    setCurrentStep("ready");
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6 flex items-center justify-center">
-      <Card className="w-full max-w-2xl bg-white shadow-2xl">
+      <Card className="w-full max-w-lg bg-white shadow-2xl">
         <CardHeader className="text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
-          <CardTitle className="text-3xl font-bold">
-            💳 Терминал Оплаты
-          </CardTitle>
+          <CardTitle className="text-3xl font-bold">💳 Оплата картой</CardTitle>
           <p className="text-blue-100 mt-2">Быстро • Безопасно • Надежно</p>
         </CardHeader>
 
         <CardContent className="p-8">
-          {currentStep === "amount" && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                  Введите сумму к оплате
-                </h2>
-                <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
-                  <div className="text-5xl font-bold text-gray-900 mb-2">
-                    ₽ {formatAmount(amount)}
-                  </div>
-                  <div className="text-gray-500">Российские рубли</div>
+          {currentStep === "ready" && (
+            <div className="space-y-6 text-center">
+              <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
+                <div className="text-5xl font-bold text-gray-900 mb-2">
+                  ₽ {amount}
                 </div>
+                <div className="text-gray-500">К оплате</div>
               </div>
 
               <Separator />
 
-              <NumericKeypad
-                onButtonClick={handleAmountChange}
-                showConfirm={!!amount}
-              />
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-center space-x-4 mb-4">
+                    <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-2xl">
+                      💳
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-800">
+                        Банковская карта
+                      </h3>
+                      <p className="text-gray-600">Visa, MasterCard, МИР</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Button
+                size="lg"
+                className="w-full text-lg py-6 bg-blue-600 hover:bg-blue-700"
+                onClick={handlePayment}
+              >
+                Оплатить ₽ {amount}
+              </Button>
             </div>
           )}
 
-          {currentStep === "method" && (
-            <PaymentMethods
-              amount={formatAmount(amount)}
-              onMethodSelect={handleMethodSelect}
-              onBack={() => setCurrentStep("amount")}
-            />
+          {currentStep === "processing" && (
+            <div className="text-center space-y-6">
+              <div className="text-6xl animate-spin">⏳</div>
+              <h2 className="text-2xl font-semibold text-gray-800">
+                Обработка платежа...
+              </h2>
+              <p className="text-gray-600">
+                Сумма: ₽ {amount} • Банковская карта
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full animate-pulse"
+                  style={{ width: "60%" }}
+                ></div>
+              </div>
+            </div>
           )}
 
-          {(currentStep === "processing" ||
-            currentStep === "success" ||
-            currentStep === "error") && (
-            <PaymentStatus
-              status={currentStep}
-              amount={formatAmount(amount)}
-              method={selectedMethod}
-              onReset={resetTerminal}
-            />
+          {currentStep === "success" && (
+            <div className="text-center space-y-6">
+              <div className="text-6xl text-green-500 animate-bounce">✅</div>
+              <Card className="bg-green-50 border-green-200">
+                <CardContent className="p-6">
+                  <h2 className="text-2xl font-bold text-green-700 mb-2">
+                    Платеж успешно проведен!
+                  </h2>
+                  <p className="text-green-600 text-lg">Сумма: ₽ {amount}</p>
+                  <p className="text-green-600">Способ: Банковская карта</p>
+                  <p className="text-sm text-green-500 mt-4">
+                    Операция №: {Date.now().toString().slice(-8)}
+                  </p>
+                </CardContent>
+              </Card>
+              <Button
+                size="lg"
+                className="w-full bg-green-600 hover:bg-green-700"
+                onClick={resetTerminal}
+              >
+                Новый платеж
+              </Button>
+            </div>
+          )}
+
+          {currentStep === "error" && (
+            <div className="text-center space-y-6">
+              <div className="text-6xl text-red-500">❌</div>
+              <Card className="bg-red-50 border-red-200">
+                <CardContent className="p-6">
+                  <h2 className="text-2xl font-bold text-red-700 mb-2">
+                    Ошибка платежа
+                  </h2>
+                  <p className="text-red-600">Не удалось провести операцию</p>
+                  <p className="text-sm text-red-500 mt-2">
+                    Проверьте данные и попробуйте снова
+                  </p>
+                </CardContent>
+              </Card>
+              <Button size="lg" className="w-full" onClick={resetTerminal}>
+                Попробовать снова
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
